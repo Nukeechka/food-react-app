@@ -1,52 +1,77 @@
+import { useEffect, useState } from "react";
 import Card from "../UI/Card";
 import MealItem from "./MealItem/MealItem";
 import styles from "./MealList.module.css";
 
-const DUMMY_MEALS = [
-  {
-    id: "m1",
-    name: "Caesar Salad with Chicken",
-    description:
-      "Romaine lettuce, chicken, parmesan, croutons, Caesar dressing",
-    price: 9.99,
-  },
-  {
-    id: "m2",
-    name: "Margherita Pizza",
-    description: "Tomato sauce, mozzarella, basil",
-    price: 12.99,
-  },
-  {
-    id: "m3",
-    name: "Carbonara",
-    description: "Spaghetti, egg, parmesan, bacon, creamy sauce",
-    price: 10.99,
-  },
-  {
-    id: "m4",
-    name: "Niçoise Salad",
-    description: "Tuna, eggs, potatoes, green beans, anchovies, olive oil",
-    price: 8.99,
-  },
-];
-
 const MealList = () => {
-  const mealList = DUMMY_MEALS.map((meal) => (
-    <MealItem
-      key={meal.id}
-      name={meal.name}
-      description={meal.description}
-      price={meal.price}
-      id={meal.id}
-    />
-  ));
-  return (
-    <section className={styles.meals}>
-      <Card>
-        <ul>{mealList}</ul>
-      </Card>
-    </section>
-  );
+	const [food, setFood] = useState([]);
+	const [isLoading, setIsLoading] = useState(false);
+	const [isHttpErrorMessage, setIsHttpErrorMessage] = useState();
+	useEffect(() => {
+		const fetchFood = async () => {
+			setIsLoading(true);
+			const response = await fetch(
+				"https://food-app-d5d8b-default-rtdb.asia-southeast1.firebasedatabase.app/food.json"
+			);
+
+			if (!response.ok) {
+				throw new Error("Something went wrong");
+			}
+
+			const data = await response.json();
+
+			const loadedFood = [];
+
+			for (const key in data) {
+				loadedFood.push({
+					id: key,
+					name: data[key].name,
+					description: data[key].description,
+					price: data[key].price,
+				});
+			}
+
+			setFood(loadedFood);
+			setIsLoading(false);
+		};
+
+		fetchFood().catch((err) => {
+			setIsLoading(false);
+			setIsHttpErrorMessage(err);
+		});
+	}, []);
+
+	if (isLoading) {
+		return (
+			<section className={styles.loadingText}>
+				<p>Loading..</p>
+			</section>
+		);
+	}
+
+	if (isHttpErrorMessage) {
+		return (
+			<section className={styles.loadingText}>
+				<p>Error. Try again later</p>
+			</section>
+		);
+	}
+	const mealList = food.map((meal) => (
+		<MealItem
+			key={meal.id}
+			name={meal.name}
+			description={meal.description}
+			price={meal.price}
+			id={meal.id}
+		/>
+	));
+	return (
+		<section className={styles.meals}>
+			<Card>
+				<ul>{mealList}</ul>
+			</Card>
+		</section>
+	);
 };
 
 export default MealList;
